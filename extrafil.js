@@ -60,15 +60,19 @@ app.post("/login", async (req, res) => {
     }
     const passcheck = await bcrypt.compare(req.body.Password, check.Password);
     console.log("333333333333333333 3");
+
     if (passcheck) {
       console.log("44444444444$$$$$$$$$$$ 4");
       //   res.json("here is me ");
 
       //   next(); ///here i have mentioned change
-      const token = jwt.sign({ Email: user.Email }, "shivam", {
-        expiresIn: "5m",
-      });
+      const token = jwt.sign(
+        { Email: check.Email },
+        "shivam",
+        { expiresIn: "5m" } // expires in 24 hours
+      );
       console.log("5555555%%%%%%%%%%555555555");
+      // req.token = token;
       res.json({ token });
 
       console.log("ethe aa main");
@@ -77,5 +81,45 @@ app.post("/login", async (req, res) => {
     }
   } catch {}
 });
+
+app.post("/logout", verifyToken, (req, res) => {
+  try {
+    console.log("inside logout route");
+    const token = req.token;
+    const email = req.user;
+    console.log("token", token);
+
+    const data = jwt.sign({ email }, "shivam", { expiresIn: 1 });
+    res.json({ msg: "logged out" });
+  } catch (e) {
+    throw new Error(e);
+  }
+});
+
+async function verifyToken(req, res, next) {
+  console.log("inside middleqware");
+  const bearerHeader = req.headers["authorization"];
+  if (typeof bearerHeader !== "undefined") {
+    console.log("inside beare token exists");
+    const bearer = bearerHeader.split(" ");
+    const token = bearer[1];
+    console.log("tooken data", token);
+
+    const data = jwt.verify(token, "shivam");
+    console.log("after verify user");
+    const user = await signupschemas.findOne({ Email: data.Email });
+    if (!user) {
+      console.log("inside user does not exists");
+      throw new Error();
+    }
+    req.token = token;
+    req.user = data.Email;
+    next();
+  } else {
+    res.send({ result: "token is not valid" });
+    // next();
+  }
+  // res.json({ msg: " hello this is from token verification" });
+}
 
 app.listen(port);
